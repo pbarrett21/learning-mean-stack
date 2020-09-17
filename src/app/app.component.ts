@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Post } from './posts/post.model';
 
 @Component({
   selector: 'app-root',
@@ -6,5 +7,10 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'mean-tutorial-web';
+
+  storedPosts: Post[] = [];
+
+  onPostAdded(post: any) {
+    this.storedPosts.push(post);
+  }
 }

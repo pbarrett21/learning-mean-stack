@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.fontSize": 14,
+    "debug.console.fontSize": 14,
+    "editor.fontSize": 18,
+    "javascript.format.enable": false
+}
