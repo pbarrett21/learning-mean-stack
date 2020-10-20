@@ -1,26 +1,60 @@
 const express = require("express");
+const multer = require("multer");
 const PostModel = require("../models/post");
 
- const router = express.Router();
+const router = express.Router();
 
- router.post("/add", (req, res, next) => {
-  const post = new PostModel({
-    title: req.body.title,
-    content: req.body.content,
-  });
-  post
-    .save()
-    .then((postResponse) => {
-      res.status(201).json({
-        message: "Post added successfully",
-        id: postResponse._id,
-      });
-    })
-    .catch(() => {
-      console.log("Could not add post.");
-    });
+const MIME_TYPE_MAP = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+};
+
+const storage = multer.diskStorage({
+  destination: (req, file, callback) => {
+    const isValid = MIME_TYPE_MAP[file.mimetype];
+    let error = new Error("Invalid MIME type");
+    if (isValid) {
+      error = null;
+    }
+    callback(error, "backend/images");
+  },
+  filename: (req, file, callback) => {
+    const name = file.originalname.toLowerCase().split(" ").join("-");
+    const extension = MIME_TYPE_MAP[file.mimetype];
+    callback(null, name + "-" + Date.now() + "." + extension);
+  },
 });
 
+// ADD NEW POST
+router.post(
+  "/add",
+  multer({ storage: storage }).single("image"),
+  (req, res, next) => {
+    const url = req.protocol + "://" + req.get("host");
+    const post = new PostModel({
+      title: req.body.title,
+      content: req.body.content,
+      imagePath: url + "/images/" + req.file.filename,
+    });
+    post
+      .save()
+      .then((postResponse) => {
+        res.status(201).json({
+          message: "Post added successfully",
+          post: {
+            ...postResponse,
+            id: postResponse._id
+          },
+        });
+      })
+      .catch(() => {
+        console.log("Could not add post.");
+      });
+  }
+);
+
+// GET ALL POSTS
 router.get("", (req, res, next) => {
   // const posts = [
   //   { id: "1", title: "First server post", content: "server content" },
@@ -35,6 +69,7 @@ router.get("", (req, res, next) => {
   });
 });
 
+// DELETE POST BY ID
 router.delete("/delete/:id", (req, res, next) => {
   PostModel.deleteOne({ _id: req.params.id })
     .then((result) => {
@@ -47,6 +82,7 @@ router.delete("/delete/:id", (req, res, next) => {
     });
 });
 
+// UPDATE POST BY ID
 router.put("/update/:id", (req, res, next) => {
   const newPost = new PostModel({
     _id: req.body.id,
@@ -64,6 +100,7 @@ router.put("/update/:id", (req, res, next) => {
     });
 });
 
+// GET POST BY ID
 router.get("/byId/:id", (req, res, next) => {
   PostModel.findById(req.params.id).then((post) => {
     if (post) {
