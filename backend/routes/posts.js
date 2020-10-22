@@ -10,6 +10,7 @@ const MIME_TYPE_MAP = {
   "image/jpg": "jpg",
 };
 
+// STORE IMAGES
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
     const isValid = MIME_TYPE_MAP[file.mimetype];
@@ -44,7 +45,7 @@ router.post(
           message: "Post added successfully",
           post: {
             ...postResponse,
-            id: postResponse._id
+            id: postResponse._id,
           },
         });
       })
@@ -83,22 +84,33 @@ router.delete("/delete/:id", (req, res, next) => {
 });
 
 // UPDATE POST BY ID
-router.put("/update/:id", (req, res, next) => {
-  const newPost = new PostModel({
-    _id: req.body.id,
-    title: req.body.title,
-    content: req.body.content,
-  });
-  PostModel.updateOne({ _id: req.params.id }, newPost)
-    .then((result) => {
-      res.status(200).json({
-        message: "Update successful!",
-      });
-    })
-    .catch((error) => {
-      console.log("Could not update post: " + error);
+router.put(
+  "/update/:id",
+  multer({ storage: storage }).single("image"),
+  (req, res, next) => {
+    let imagePath = req.body.imagePath; // if new file is not present [string]
+    if (req.file) {
+      //if a new file is present [file format]
+      const url = req.protocol + "://" + req.get("host");
+      imagePath = url + "/images/" + req.file.filename;
+    }
+    const newPost = new PostModel({
+      _id: req.body.id,
+      title: req.body.title,
+      content: req.body.content,
+      imagePath: imagePath
     });
-});
+    PostModel.updateOne({ _id: req.params.id }, newPost)
+      .then((result) => {
+        res.status(200).json({
+          message: "Update successful!",
+        });
+      })
+      .catch((error) => {
+        console.log("Could not update post: " + error);
+      });
+  }
+);
 
 // GET POST BY ID
 router.get("/byId/:id", (req, res, next) => {
