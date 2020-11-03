@@ -57,15 +57,24 @@ router.post(
 
 // GET ALL POSTS
 router.get("", (req, res, next) => {
-  // const posts = [
-  //   { id: "1", title: "First server post", content: "server content" },
-  //   { id: "2", title: "Second server post", content: "server content" },
-  //   { id: "3", title: "Third server post", content: "server content" },
-  // ];
-  PostModel.find().then((documents) => {
+  const pageSize = +req.query.pagesize; // + converts from string to number
+  const currentPage = +req.query.currentpage;
+  const postQuery = PostModel.find();
+  let fetchedPosts;
+  if (pageSize && currentPage) {
+    postQuery
+    .skip(pageSize * (currentPage - 1)) // skip this many posts
+    .limit(pageSize); // limit results to this many results
+  }
+  postQuery.then((documents) => {
+    fetchedPosts = documents;
+    return PostModel.count();
+  })
+  .then(count => {
     res.status(200).json({
       message: "Posts fetched successfully",
-      posts: documents,
+      posts: fetchedPosts,
+      maxPosts: count
     });
   });
 });
